@@ -60,6 +60,26 @@ jobs:
           cp "$APK" TotemPro-Android.apk
           ls -l TotemPro-Android.apk
 
+      # Pacote para a Google Play (.aab): fica só como arquivo desta execução (30 dias), não vai para a release pública.
+      - name: Gerar o pacote para a Google Play (.aab)
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: gradle bundleRelease --no-daemon --stacktrace
+
+      - name: Preparar o arquivo .aab
+        run: |
+          test -f android/app/build/outputs/bundle/release/app-release.aab
+          cp android/app/build/outputs/bundle/release/app-release.aab TotemPro-Android.aab
+          ls -l TotemPro-Android.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TotemPro-Android-aab
+          path: TotemPro-Android.aab
+          retention-days: 30
+
       - name: Publicar na release android-latest (pré-lançamento, não vira a "latest" do Windows)
         env:
           GH_TOKEN: ${{ github.token }}
