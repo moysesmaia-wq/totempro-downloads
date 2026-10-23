@@ -12,6 +12,11 @@ on:
 permissions:
   contents: write
 
+# Duas execuções seguidas não disputam a release; a que está rodando termina antes da próxima começar.
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -60,6 +65,17 @@ jobs:
           cp "$APK" TotemPro-Android.apk
           ls -l TotemPro-Android.apk
 
+      - name: Publicar na release android-latest (pré-lançamento, não vira a "latest" do Windows)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view android-latest >/dev/null 2>&1; then
+            gh release create android-latest --prerelease --latest=false \
+              --title "TotemPro Android" \
+              --notes "Última versão do app Android. Esta release é atualizada a cada geração."
+          fi
+          gh release upload android-latest TotemPro-Android.apk --clobber
+
       # Pacote para a Google Play (.aab): fica só como arquivo desta execução (30 dias), não vai para a release pública.
       - name: Gerar o pacote para a Google Play (.aab)
         working-directory: android
@@ -79,14 +95,3 @@ jobs:
           name: TotemPro-Android-aab
           path: TotemPro-Android.aab
           retention-days: 30
-
-      - name: Publicar na release android-latest (pré-lançamento, não vira a "latest" do Windows)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if ! gh release view android-latest >/dev/null 2>&1; then
-            gh release create android-latest --prerelease --latest=false \
-              --title "TotemPro Android" \
-              --notes "Última versão do app Android. Esta release é atualizada a cada geração."
-          fi
-          gh release upload android-latest TotemPro-Android.apk --clobber
