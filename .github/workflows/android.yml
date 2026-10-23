@@ -1,0 +1,68 @@
+# Gera o APK assinado do app Android do TotemPro e publica na release "android-latest".
+# Este arquivo vive em native/android/workflow/ no projeto principal e é copiado para
+# .github/workflows/ do repositório de downloads por scripts/sync-android-downloads.sh.
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "android-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Preparar a chave de assinatura
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_B64" || { echo "Segredo ANDROID_KEYSTORE_B64 ausente"; exit 1; }
+          echo "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/totempro.p12"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/totempro.p12" >> "$GITHUB_ENV"
+
+      - name: Gerar o APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Conferir assinatura, pacote e versão
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          "$BT/apksigner" verify --print-certs "$APK"
+          "$BT/aapt" dump badging "$APK" | grep -E "^package:|application-label:|launchable-activity" 
+          cp "$APK" TotemPro-Android.apk
+          ls -l TotemPro-Android.apk
+
+      - name: Publicar na release android-latest (pré-lançamento, não vira a "latest" do Windows)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view android-latest >/dev/null 2>&1; then
+            gh release create android-latest --prerelease --latest=false \
+              --title "TotemPro Android" \
+              --notes "Última versão do app Android. Esta release é atualizada a cada geração."
+          fi
+          gh release upload android-latest TotemPro-Android.apk --clobber

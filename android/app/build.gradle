@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Número da versão = número da execução do fluxo no GitHub (sobe sozinho a cada geração).
+def buildNumber = (System.getenv("VERSION_CODE") ?: "1").toInteger()
+
+android {
+    namespace "br.com.totempro.app"
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "br.com.totempro.app"
+        minSdk 24
+        targetSdk 36
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    // A chave de assinatura vem do ambiente do GitHub Actions; nada de chave nem senha neste projeto.
+    signingConfigs {
+        release {
+            def path = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (path) {
+                storeFile file(path)
+                storeType "pkcs12"
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv("ANDROID_KEYSTORE_PATH")) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}

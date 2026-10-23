@@ -1,0 +1,4 @@
+// Projeto Android do TotemPro: um app TWA (abre o site no Chrome do aparelho, em tela cheia).
+plugins {
+    id 'com.android.application' version '8.9.1' apply false
+}
