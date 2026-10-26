@@ -15,6 +15,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.browser.customtabs.CustomTabsIntent;
+
 import com.google.androidbrowserhelper.trusted.LauncherActivity;
 
 import java.io.PrintWriter;
@@ -60,20 +62,41 @@ public class DiagActivity extends Activity {
         root.addView(log);
 
         Button b1 = new Button(this);
-        b1.setText("1) Abrir o TotemPro (modo app)");
+        b1.setText("1) Modo app (como esta hoje, tela cheia)");
         b1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                add("Tocou no botao 1. Pedindo para abrir...");
-                try {
-                    startActivity(new Intent(DiagActivity.this, LauncherActivity.class));
-                    add("Pedido enviado sem erro. Se nada aparecer, o app fechou sozinho.");
-                } catch (Throwable e) {
-                    add("ERRO ao abrir:\n" + trace(e));
-                }
+                abrir(LauncherActivity.class, "botao 1");
             }
         });
         root.addView(b1);
+
+        Button b3 = new Button(this);
+        b3.setText("3) Modo app SEM tela cheia");
+        b3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                abrir(TwaPlain.class, "botao 3");
+            }
+        });
+        root.addView(b3);
+
+        Button b4 = new Button(this);
+        b4.setText("4) Aba do Chrome (Custom Tab)");
+        b4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                add("Tocou no botao 4.");
+                try {
+                    new CustomTabsIntent.Builder().build().launchUrl(DiagActivity.this, Uri.parse("https://totempro.com.br/app"));
+                    add("Custom Tab chamada sem erro.");
+                } catch (Throwable e) {
+                    add("ERRO na Custom Tab:
+" + trace(e));
+                }
+            }
+        });
+        root.addView(b4);
 
         Button b2 = new Button(this);
         b2.setText("2) Abrir o site no Chrome");
@@ -106,6 +129,19 @@ public class DiagActivity extends Activity {
             add("ERRO DA ABERTURA ANTERIOR:\n" + last);
         } else {
             add("Nenhum erro guardado da abertura anterior.");
+        }
+    }
+
+    private void abrir(Class<?> alvo, String nome) {
+        add("Tocou no " + nome + ". Pedindo para abrir...");
+        try {
+            Intent i = new Intent(this, alvo);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            add("Pedido enviado sem erro. Se nada aparecer, o app fechou sozinho.");
+        } catch (Throwable e) {
+            add("ERRO ao abrir:
+" + trace(e));
         }
     }
 
