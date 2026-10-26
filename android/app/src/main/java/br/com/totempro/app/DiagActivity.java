@@ -91,8 +91,7 @@ public class DiagActivity extends Activity {
                     new CustomTabsIntent.Builder().build().launchUrl(DiagActivity.this, Uri.parse("https://totempro.com.br/app"));
                     add("Custom Tab chamada sem erro.");
                 } catch (Throwable e) {
-                    add("ERRO na Custom Tab:
-" + trace(e));
+                    add("ERRO na Custom Tab: " + trace(e));
                 }
             }
         });
@@ -140,8 +139,7 @@ public class DiagActivity extends Activity {
             startActivity(i);
             add("Pedido enviado sem erro. Se nada aparecer, o app fechou sozinho.");
         } catch (Throwable e) {
-            add("ERRO ao abrir:
-" + trace(e));
+            add("ERRO ao abrir: " + trace(e));
         }
     }
 
